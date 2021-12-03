@@ -2,17 +2,27 @@
 import datetime
 
 
-def get_xxx_from_file(file_path="day1_input.txt"):
+def get_modules_from_file(file_path="day1_input.txt"):
     with open(file_path) as f:
-        return [l.strip() for l in f]
+        return [int(l.strip()) for l in f]
+
+
+def get_fuel_requirement(weight):
+    return (weight // 3) - 2
+
+
+def get_full_fuel_requirement(modules):
+    return sum(get_fuel_requirement(m) for m in modules)
 
 
 def run_tests():
-    xxx = some_hardcoded_value
+    modules = [12, 14, 1969, 100756]
+    assert get_full_fuel_requirement(modules) == 2 + 2 + 654 + 33583
 
 
 def get_solutions():
-    xxx = get_xxx_from_file()
+    modules = get_modules_from_file()
+    print(get_full_fuel_requirement(modules))
 
 
 if __name__ == "__main__":
