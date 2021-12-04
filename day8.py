@@ -25,14 +25,33 @@ def find_number1(image, width, height):
     return layer.count("1") * layer.count("2")
 
 
+def get_pixel(index, layers):
+    transparent = "2"
+    for l in layers:
+        v = l[index]
+        if v != transparent:
+            return v
+    assert False
+
+
+def get_image(image, width, height):
+    layers = list(get_layers(image, width, height))
+    pixels = "".join(get_pixel(i, layers) for i in range(len(layers[0])))
+    return "\n".join("".join(line) for line in grouper(pixels, width))
+
+
 def run_tests():
-    image = "123456789012"
-    layers = get_layers(image, 3, 2)
+    image = "0222112222120000"
+    assert get_image(image, 2, 2) == """01
+10"""
 
 
 def get_solutions():
     image = get_image_from_file()
-    print(find_number1(image, 25, 6))
+    width, height = 25, 6
+    print(find_number1(image, width, height))
+    print(get_image(image, width, height).replace("0", " "))
+
 
 if __name__ == "__main__":
     begin = datetime.datetime.now()
