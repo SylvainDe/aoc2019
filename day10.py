@@ -42,8 +42,20 @@ def visible(a, b, asteroids):
 
 def get_best_asteroid_count(grid):
     asteroids = set(get_asteroids(grid))
-    return max(sum(a != b and visible(a, b, asteroids) for b in asteroids)
-                for a in asteroids)
+    return max(
+        (sum(a != b and visible(a, b, asteroids) for b in asteroids), a)
+        for a in asteroids)
+
+
+def vaporise(grid, ref):
+    xo, yo = ref
+    asteroids = set(get_asteroids(grid))
+    for x, y in asteroids:
+        if (x, y) != ref:
+            dx, dy = x - xo, y - yo
+            # TODO: To be continued: compute angle and stuff
+
+
 
 def run_tests():
     grid = [
@@ -53,7 +65,7 @@ def run_tests():
         "....#",
         "...##",
     ]
-    assert get_best_asteroid_count(grid) == 8
+    assert get_best_asteroid_count(grid)[0] == 8
     grid = [
         ".#..##.###...#######",
         "##.############..##.",
@@ -76,12 +88,21 @@ def run_tests():
         "#.#.#.#####.####.###",
         "###.##.####.##.#..##",
     ]
-    assert get_best_asteroid_count(grid) == 210
+    assert get_best_asteroid_count(grid)[0] == 210
+    grid = [
+        ".#....#####...#..",
+        "##...##.#####..##",
+        "##...#...#.#####.",
+        "..#.....X...###..",
+        "..#.#.....#....##",
+    ]
+    vaporise(grid, (3, 8))
 
 
 def get_solutions():
     grid = get_grid_from_file()
-    print(get_best_asteroid_count(grid))
+    count, p = get_best_asteroid_count(grid)
+    print(count)
 
 
 if __name__ == "__main__":
