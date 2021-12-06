@@ -2,6 +2,7 @@
 import datetime
 import collections
 import fractions
+import math
 
 def get_quantity_and_chemical(s):
     nb, chem = s.split(" ")
@@ -25,13 +26,10 @@ def apply_reaction(products, reaction_by_output, integer_recipe):
             if prod in reaction_by_output:
                 chemicals_in, nb_out, = reaction_by_output[prod]
                 if integer_recipe:
-                    q, r = divmod(nb, nb_out)
-                    if r != 0:
-                        q, r = q + 1, 0
+                    q = math.ceil(nb / nb_out)
                 else:
                     q = fractions.Fraction(nb, nb_out)
-                new_nb = nb - nb_out * q
-                products[prod] = new_nb
+                products[prod] = nb - nb_out * q
                 for n, chem in chemicals_in:
                     products[chem] += q * n
                 return True
