@@ -1,6 +1,7 @@
 # vi: set shiftwidth=4 tabstop=4 expandtab:
 import datetime
 import collections
+import fractions
 
 def get_quantity_and_chemical(s):
     nb, chem = s.split(" ")
@@ -18,36 +19,44 @@ def get_reactions_from_file(file_path="day14_input.txt"):
         return [get_reaction_from_line(l) for l in f]
 
 
-def apply_reaction(products, reaction_by_output):
+def apply_reaction(products, reaction_by_output, integer_recipe):
     for prod, nb in products.items():
         if nb > 0:
             if prod in reaction_by_output:
                 chemicals_in, nb_out, = reaction_by_output[prod]
-                q, r = divmod(nb, nb_out)
-                if r != 0:
-                    q, r = q + 1, 0
-                if r == 0:
-                    new_nb = nb - nb_out * q
-                    products[prod] = new_nb
-                    for n, chem in chemicals_in:
-                        products[chem] += q * n
-                    return True
+                if integer_recipe:
+                    q, r = divmod(nb, nb_out)
+                    if r != 0:
+                        q, r = q + 1, 0
+                else:
+                    q = fractions.Fraction(nb, nb_out)
+                new_nb = nb - nb_out * q
+                products[prod] = new_nb
+                for n, chem in chemicals_in:
+                    products[chem] += q * n
+                return True
     return False
 
 
-def make_product(reactions, product=[(1, "FUEL")]):
+def ore_to_make_product(reactions, integer_recipe=True, product=[(1, "FUEL")]):
     reaction_by_output = dict()
     for chemicals_in, (nb_out, chem_out) in reactions:
         assert chem_out not in reaction_by_output
         reaction_by_output[chem_out] = (chemicals_in, nb_out)
 
     products = collections.Counter({prod: nb for nb, prod in product})
-    while apply_reaction(products, reaction_by_output):
+    while apply_reaction(products, reaction_by_output, integer_recipe):
         pass
-    # print(products)
     for prod, nb in products.items():
         assert prod == "ORE" or nb <= 0
     return products["ORE"]
+
+
+def max_fuel_prod(reactions, ore=1000000000000):
+    ore_per_fuel = ore_to_make_product(reactions, False)
+    fuel_estimation = int(ore / ore_per_fuel)
+    assert ore_to_make_product(reactions, False, [(fuel_estimation, "FUEL")]) <= ore
+    return fuel_estimation
 
 
 def run_tests():
@@ -60,7 +69,7 @@ def run_tests():
         "7 A, 1 E => 1 FUEL",
     ]
     reactions = [get_reaction_from_line(l) for l in reactions]
-    assert make_product(reactions) == 31
+    assert ore_to_make_product(reactions) == 31
     reactions = [
         "9 ORE => 2 A",
         "8 ORE => 3 B",
@@ -71,7 +80,7 @@ def run_tests():
         "2 AB, 3 BC, 4 CA => 1 FUEL",
     ]
     reactions = [get_reaction_from_line(l) for l in reactions]
-    assert make_product(reactions) == 165
+    assert ore_to_make_product(reactions) == 165
     reactions = [
         "157 ORE => 5 NZVS",
         "165 ORE => 6 DCFZ",
@@ -84,7 +93,8 @@ def run_tests():
         "3 DCFZ, 7 NZVS, 5 HKGWZ, 10 PSHF => 8 KHKGT",
     ]
     reactions = [get_reaction_from_line(l) for l in reactions]
-    assert make_product(reactions) == 13312
+    assert ore_to_make_product(reactions) == 13312
+    assert max_fuel_prod(reactions) == 82892753
     reactions = [
         "2 VPVL, 7 FWMGM, 2 CXFTF, 11 MNCFX => 1 STKFG",
         "17 NVRVD, 3 JNWZP => 8 VPVL",
@@ -100,7 +110,8 @@ def run_tests():
         "176 ORE => 6 VJHF",
     ]
     reactions = [get_reaction_from_line(l) for l in reactions]
-    assert make_product(reactions) == 180697
+    assert ore_to_make_product(reactions) == 180697
+    assert max_fuel_prod(reactions) == 5586022
     reactions = [
         "171 ORE => 8 CNZTR",
         "7 ZLQW, 3 BMBT, 9 XCVML, 26 XMNCP, 1 WPTQ, 2 MZWV, 1 RJRHP => 4 PLWSL",
@@ -121,12 +132,14 @@ def run_tests():
         "5 BHXH, 4 VRPVC => 5 LTCX",
     ]
     reactions = [get_reaction_from_line(l) for l in reactions]
-    assert make_product(reactions) == 2210736
+    assert ore_to_make_product(reactions) == 2210736
+    assert max_fuel_prod(reactions) == 460664
 
 
 def get_solutions():
     reactions = get_reactions_from_file()
-    print(make_product(reactions))
+    print(ore_to_make_product(reactions))
+    print(max_fuel_prod(reactions))
 
 
 if __name__ == "__main__":
