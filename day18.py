@@ -113,7 +113,7 @@ def run_tests():
         "#l.F..d...h..C.m#",
         "#################",
     ]
-    print(get_all_keys(maze)) # 136
+    # print(get_all_keys(maze)) # 136
     maze = [
         "########################",
         "#@..............ac.GI.b#",
@@ -122,7 +122,7 @@ def run_tests():
         "###g#h#i################",
         "########################",
     ]
-    print(get_all_keys(maze)) # 81
+    assert get_all_keys(maze) == 81
 
 
 def get_solutions():
