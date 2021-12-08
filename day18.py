@@ -19,7 +19,8 @@ def is_empty(c):
     return c == "."
 
 def is_free(c, keys):
-    return is_empty(c) or is_key(c) or is_entrance(c) or c.lower() in keys
+    return c != "#" and (not c.isupper() or c.lower() in keys)
+    # return is_empty(c) or is_key(c) or is_entrance(c) or c.lower() in keys
 
 def at(maze, pos):
     x, y = pos
@@ -79,9 +80,11 @@ def get_all_keys(maze):
             print(dist, keys_found)
             return dist
         for k, d in distances_to_keys(maze, pos, keys_found, keys_to_find).items():
-            assert k not in keys_found
-            # print("key:", k)
-            heapq.heappush(heap, (dist + d, nb_keys - 1, k, keys_found + [at(maze, k)]))
+            dist2 = dist + d
+            new_key = at(maze, k)
+            assert new_key not in keys_found
+            keys2 = keys_found + [new_key]
+            heapq.heappush(heap, (dist2, nb_keys - 1, k, keys2))
     assert 0
 
 
