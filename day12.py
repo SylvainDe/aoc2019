@@ -39,6 +39,7 @@ absv = vect_op(abs)
 
 def simulation(positions, nb_steps):
     nb_dim = len(positions[0])
+    positions = list(positions)  # Copy of data that will be updated
     velocities = [[0] * nb_dim for _ in range(len(positions))]
     for _ in range(nb_steps):
         # Apply gravity
@@ -86,7 +87,7 @@ def run_tests():
         "<x=3, y=5, z=-1>",
     ]
     pos = [get_pos_from_str(p) for p in pos]
-    assert simulation(list(pos), 10) == 179
+    assert simulation(pos, 10) == 179
     assert simulation2(pos) == 2772
     pos2 = [
         "<x=-8, y=-10, z=0>",
@@ -95,13 +96,13 @@ def run_tests():
         "<x=9, y=-8, z=-3>",
     ]
     pos2 = [get_pos_from_str(p) for p in pos2]
-    assert simulation(list(pos2), 100) == 1940
-
+    assert simulation(pos2, 100) == 1940
+    assert simulation2(pos2) == 4686774924
 
 
 def get_solutions():
     pos = get_pos_from_file()
-    print(simulation(list(pos), 1000))
+    print(simulation(pos, 1000))
     print(simulation2(pos))
 
 
