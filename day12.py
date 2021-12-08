@@ -52,39 +52,31 @@ def simulation(positions, nb_steps):
             positions[i] = add(p, v)
     return sum(sum(absv(p)) * sum(absv(v)) for p, v in zip(positions, velocities))
 
+
 def lcm(a, b):
     """Computes lcm for 2 numbers."""
     return a * b // math.gcd(a, b)
 
-def lcmm(*args):
-    """Computes lcm for numbers."""
-    return functools.reduce(lcm, args)
-
 
 def simulation2(positions):
+    # Simulate for each dimension independantly and compute time to initial
+    revolution = 1
     nb_dim = len(positions[0])
-    revolution = []
     for dim in range(nb_dim):
-        # Simulate for each dimension independantly and compute time to initial
-        # We use vectors of size 1 to reuse most of the already existing code
         positions0 = [p[dim] for p in positions]
-        positions_x = [[x] for x in positions0]
-        velocities = [[0] * 1 for _ in range(len(positions_x))]
-        for rev in itertools.count(start = 1):
+        velocities0 = [0 for p in positions]
+        pos, velo = positions0, velocities0
+        for nb in itertools.count(start = 1):
             # Apply gravity
-            for i, (p, v) in enumerate(zip(positions_x, velocities)):
-                for j, p2 in enumerate(positions_x):
-                    if i != j:
-                        v = add(v, signv(sub(p2, p)))
-                velocities[i] = v
+            velo = add(velo, [sum(sign(p2 - p) for p2 in pos) for p in pos])
             # Apply velocity
-            for i, (p, v) in enumerate(zip(positions_x, velocities)):
-                positions_x[i] = add(p, v)
-            if positions0 == [p[0] for p in positions_x] and all(v == [0] for v in velocities):
-                print(dim, rev)
-                revolution.append(rev)
+            pos = add(pos, velo)
+            # Check results
+            if (pos, velo) == (positions0, velocities0):
+                revolution = lcm(revolution, nb)
                 break
-    return lcmm(*revolution)
+    return revolution
+
 
 def run_tests():
     pos = [
