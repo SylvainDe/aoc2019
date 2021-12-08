@@ -10,8 +10,8 @@ def get_orbits_from_file(file_path="day6_input.txt"):
 def build_graph(orbits):
     graph = dict()
     for orbit in orbits:
-       left, right = orbit.split(")")
-       graph[right] = left
+        left, right = orbit.split(")")
+        graph[right] = left
     return graph
 
 
@@ -22,7 +22,7 @@ def get_path_to_com(graph, node):
 
 
 def count_distance(graph):
-   return sum(len(list(get_path_to_com(graph, node))) for node in graph)
+    return sum(len(list(get_path_to_com(graph, node))) for node in graph)
 
 
 def distance_to_santa(graph):

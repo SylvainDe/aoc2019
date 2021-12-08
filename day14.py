@@ -4,6 +4,7 @@ import collections
 import fractions
 import math
 
+
 def get_quantity_and_chemical(s):
     nb, chem = s.split(" ")
     return (int(nb), chem)
@@ -12,7 +13,10 @@ def get_quantity_and_chemical(s):
 def get_reaction_from_line(l):
     left, mid, right = l.strip().partition(" => ")
     assert mid == " => "
-    return [get_quantity_and_chemical(chunk) for chunk in left.split(", ")], get_quantity_and_chemical(right)
+    return (
+        [get_quantity_and_chemical(chunk) for chunk in left.split(", ")],
+        get_quantity_and_chemical(right),
+    )
 
 
 def get_reactions_from_file(file_path="day14_input.txt"):

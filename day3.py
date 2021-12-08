@@ -14,6 +14,7 @@ directions = {
     "D": (0, -1),
 }
 
+
 def get_wire_path(wire):
     x, y = 0, 0
     for instruction in wire.split(","):
@@ -29,6 +30,7 @@ def get_crossing_min_distance(wires):
     distances = [abs(x) + abs(y) for x, y in crossings]
     return min(distances)
 
+
 def get_crossing_min_delay(wires):
     paths = dict()
     for w in wires:
@@ -41,6 +43,7 @@ def get_crossing_min_delay(wires):
     crossings = [steps for steps in paths.values() if len(steps) == 2]
     steps = [sum(steps) + 2 for steps in crossings]
     return min(steps)
+
 
 def run_tests():
     wires = ["R8,U5,L5,D3", "U7,R6,D4,L4"]

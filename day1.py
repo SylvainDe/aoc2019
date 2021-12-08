@@ -14,10 +14,10 @@ def get_fuel_requirement(weight):
 def get_fuel_requirement2(weight):
     ret = 0
     while True:
-         weight = (weight // 3) - 2
-         if weight <= 0:
-             break
-         ret += weight
+        weight = (weight // 3) - 2
+        if weight <= 0:
+            break
+        ret += weight
     return ret
 
 

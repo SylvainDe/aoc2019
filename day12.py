@@ -5,10 +5,12 @@ import operator
 import math
 import functools
 
+
 def get_pos_from_str(s):
     for c in "<>xyz= ":
         s = s.replace(c, "")
     return [int(v) for v in s.split(",")]
+
 
 def get_pos_from_file(file_path="day12_input.txt"):
     with open(file_path) as f:
@@ -67,7 +69,7 @@ def simulation2(positions):
         positions0 = [p[dim] for p in positions]
         velocities0 = [0 for p in positions]
         pos, velo = positions0, velocities0
-        for nb in itertools.count(start = 1):
+        for nb in itertools.count(start=1):
             # Apply gravity
             velo = add(velo, [sum(sign(p2 - p) for p2 in pos) for p in pos])
             # Apply velocity

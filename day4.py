@@ -2,25 +2,30 @@
 import datetime
 import collections
 
+
 def is_valid(n):
     s = str(n)
-    return (len(s) == 6 and
-        len(set(s)) <= 5 and
-        all(first <= second for first, second in zip(s, s[1:])))
+    return (
+        len(s) == 6
+        and len(set(s)) <= 5
+        and all(first <= second for first, second in zip(s, s[1:]))
+    )
 
 
 def is_valid2(n):
     s = str(n)
-    return (len(s) == 6 and
-        2 in collections.Counter(s).values() and
-        all(first <= second for first, second in zip(s, s[1:])))
+    return (
+        len(s) == 6
+        and 2 in collections.Counter(s).values()
+        and all(first <= second for first, second in zip(s, s[1:]))
+    )
 
 
 def get_passwords(valid_range, func):
-   mini, maxi = valid_range
-   for n in range(mini, maxi):
-       if func(n):
-           yield n
+    mini, maxi = valid_range
+    for n in range(mini, maxi):
+        if func(n):
+            yield n
 
 
 def run_tests():

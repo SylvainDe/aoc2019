@@ -2,6 +2,7 @@
 import datetime
 import math
 
+
 def get_grid_from_file(file_path="day10_input.txt"):
     with open(file_path) as f:
         return [l.strip() for l in f]
@@ -44,7 +45,8 @@ def get_best_asteroid_count(grid):
     asteroids = set(get_asteroids(grid))
     return max(
         (sum(a != b and visible(a, b, asteroids) for b in asteroids), a)
-        for a in asteroids)
+        for a in asteroids
+    )
 
 
 def vaporise(grid, ref, index):
@@ -58,10 +60,10 @@ def vaporise(grid, ref, index):
         #  - first value is: 0 for up axis, 1 for right side, 2 for down axis, 3 for left side
         #  - second value is dy/dx (or 0 if undefined)
         if dx > 0:
-            angle = (1, dy/dx)
+            angle = (1, dy / dx)
             dist = abs(dx)
         elif dx < 0:
-            angle = (3, dy/dx)
+            angle = (3, dy / dx)
             dist = abs(dx)
         else:
             dist = abs(dy)
@@ -82,9 +84,8 @@ def vaporise(grid, ref, index):
             vaporised.append(p)
             if not l:
                 del angles[a]
-    x, y = vaporised[index -1]
-    return 100*x+y
-
+    x, y = vaporised[index - 1]
+    return 100 * x + y
 
 
 def run_tests():
