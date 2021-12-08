@@ -2,6 +2,8 @@
 import datetime
 import itertools
 import operator
+import math
+import functools
 
 def get_pos_from_str(s):
     for c in "<>xyz= ":
@@ -36,7 +38,8 @@ absv = vect_op(abs)
 
 
 def simulation(positions, nb_steps):
-    velocities = [[0] * len(positions[0]) for _ in range(len(positions))]
+    nb_dim = len(positions[0])
+    velocities = [[0] * nb_dim for _ in range(len(positions))]
     for _ in range(nb_steps):
         # Apply gravity
         for i, (p, v) in enumerate(zip(positions, velocities)):
@@ -49,6 +52,39 @@ def simulation(positions, nb_steps):
             positions[i] = add(p, v)
     return sum(sum(absv(p)) * sum(absv(v)) for p, v in zip(positions, velocities))
 
+def lcm(a, b):
+    """Computes lcm for 2 numbers."""
+    return a * b // math.gcd(a, b)
+
+def lcmm(*args):
+    """Computes lcm for numbers."""
+    return functools.reduce(lcm, args)
+
+
+def simulation2(positions):
+    nb_dim = len(positions[0])
+    revolution = []
+    for dim in range(nb_dim):
+        # Simulate for each dimension independantly and compute time to initial
+        # We use vectors of size 1 to reuse most of the already existing code
+        positions0 = [p[dim] for p in positions]
+        positions_x = [[x] for x in positions0]
+        velocities = [[0] * 1 for _ in range(len(positions_x))]
+        for rev in itertools.count(start = 1):
+            # Apply gravity
+            for i, (p, v) in enumerate(zip(positions_x, velocities)):
+                for j, p2 in enumerate(positions_x):
+                    if i != j:
+                        v = add(v, signv(sub(p2, p)))
+                velocities[i] = v
+            # Apply velocity
+            for i, (p, v) in enumerate(zip(positions_x, velocities)):
+                positions_x[i] = add(p, v)
+            if positions0 == [p[0] for p in positions_x] and all(v == [0] for v in velocities):
+                print(dim, rev)
+                revolution.append(rev)
+                break
+    return lcmm(*revolution)
 
 def run_tests():
     pos = [
@@ -58,7 +94,8 @@ def run_tests():
         "<x=3, y=5, z=-1>",
     ]
     pos = [get_pos_from_str(p) for p in pos]
-    assert simulation(pos, 10) == 179
+    assert simulation(list(pos), 10) == 179
+    assert simulation2(pos) == 2772
     pos2 = [
         "<x=-8, y=-10, z=0>",
         "<x=5, y=5, z=10>",
@@ -66,13 +103,14 @@ def run_tests():
         "<x=9, y=-8, z=-3>",
     ]
     pos2 = [get_pos_from_str(p) for p in pos2]
-    assert simulation(pos2, 100) == 1940
+    assert simulation(list(pos2), 100) == 1940
 
 
 
 def get_solutions():
     pos = get_pos_from_file()
-    print(simulation(pos, 1000))
+    print(simulation(list(pos), 1000))
+    print(simulation2(pos))
 
 
 if __name__ == "__main__":
