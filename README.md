@@ -16,3 +16,5 @@ https://adventofcode.com/2019/day/10 : 2/2
 https://adventofcode.com/2019/day/12 : 2/2
 
 https://adventofcode.com/2019/day/14 : 2/2
+
+https://adventofcode.com/2019/day/18 : 0/2

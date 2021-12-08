@@ -2,7 +2,7 @@ set -x
 
 day=$(date "+%-d")
 year=$(date "+%Y")
-day=14
+day=18
 year=2019
 puzzle_url="https://adventofcode.com/${year}/day/${day}"
 input_url="https://adventofcode.com/${year}/day/${day}/input"
