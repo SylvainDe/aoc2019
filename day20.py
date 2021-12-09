@@ -64,17 +64,18 @@ def print_graph(graph):
             print("     ", d, pos2)
 
 
-def build_graph(passages, warps):
-    # Build graph: first passage then add warp
-    graph = {
+def build_graph(passages):
+    return {
         pos: {pos2: 1 for pos2 in neighbours(pos) if pos2 in passages}
         for pos in passages
     }
+
+
+def add_warps(graph, warps):
     for label, positions in warps.items():
         assert len(positions) >= 2
         for pos1, pos2 in itertools.permutations(positions, 2):
             graph[pos1][pos2] = 1
-    return graph
 
 
 def simplify_graph(graph):
@@ -95,7 +96,7 @@ def simplify_graph(graph):
                 change = True
                 break
     print(len(graph), sum(len(succ) for succ in graph.values()))
-    print_graph(graph)
+    # print_graph(graph)
     return graph
 
 
@@ -104,16 +105,16 @@ def shortest_path(graph, entrance, exit):
     heap = [(0, entrance)]
     while heap:
         d, pos = heapq.heappop(heap)
+        if pos == exit:
+            return d
         if pos in distances:
             assert d >= distances[pos]
             continue
         distances[pos] = d
-        if pos == exit:
-            break
         for pos2, d2 in graph[pos].items():
             if pos2 not in distances:
                 heapq.heappush(heap, ((d + d2), pos2))
-    return distances[exit]
+    assert False
 
 
 def solve_maze(grid):
@@ -121,7 +122,8 @@ def solve_maze(grid):
     passages, letters = get_info(grid)
     # Extract positions for interesting places
     entrance, exit, warps = get_labels(letters, passages)
-    graph = build_graph(passages, warps)
+    graph = build_graph(passages)
+    add_warps(graph, warps)
     return shortest_path(graph, entrance, exit)
 
 
