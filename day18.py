@@ -46,7 +46,7 @@ def find_keys(maze):
     return list(find(maze, is_key))
 
 
-def distances_to_keys(maze, pos, keys, keys_to_find):
+def distances_to_keys(maze, pos, keys):
     # print("distances_to_keys:", keys_to_find)
     # Dijkstra algorithm
     distances = dict()
@@ -56,46 +56,45 @@ def distances_to_keys(maze, pos, keys, keys_to_find):
         d, pos = queue.popleft()
         distances[pos] = d
         x, y = pos
+        d2 = d + 1
         for dx, dy in neighbours:
             pos2 = x + dx, y + dy
-            if pos2 not in distances and is_free(at(maze, pos2), keys):
-                queue.append((d+1, pos2))
-    return {
-        k: distances[k] for k in keys_to_find if k in distances and at(maze, k) not in keys
-    }
+            if pos2 not in distances:
+                cell = at(maze, pos2)
+                if is_free(cell, keys):
+                    queue.append((d2, pos2))
+                if is_key(cell) and cell not in keys:
+                    yield pos2, d2, cell
 
 
 def get_all_keys(maze):
     entrance = find_entrance(maze)
-    keys_to_find = find_keys(maze)
-    print(entrance, len(keys_to_find), keys_to_find)
+    nb_keys_to_find = len(find_keys(maze))
     # Create heap with values
-    #  (distance travelled, nb_keys_to_find, position, keys_found)
-    #                                        ~~~~~~~~~~~~~~~~~~~~ <- enough to provide full state
+    #  (distance travelled, -nb_keys_found, position, keys_found)
+    #                                       ~~~~~~~~~~~~~~~~~~~~ <- enough to provide full state
     #   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ <- the smaller, the better
-    heap = [(0, len(keys_to_find), entrance, frozenset())]
+    heap = [(0, 0, entrance, frozenset())]
     seen = dict()
     while heap:
         # For each state, check reachables keys and associated distances with Dijsktra
         # add new state to heap
         dist, nb_keys, pos, keys_found = heapq.heappop(heap)
-        print(dist, pos, nb_keys)
         state = (pos, keys_found)
         state_seen = seen.get(state, None)
         if state_seen:
             assert state_seen <= dist
             continue
         seen[state] = dist
-        assert len(keys_to_find) - len(keys_found) == nb_keys
-        if len(keys_found) == len(keys_to_find):
+        assert -len(keys_found) == nb_keys
+        if len(keys_found) == nb_keys_to_find:
             print(dist, keys_found)
             return dist
-        for k, d in distances_to_keys(maze, pos, keys_found, keys_to_find).items():
-            dist2 = dist + d
-            new_key = at(maze, k)
+        for k_pos, d, new_key in distances_to_keys(maze, pos, keys_found):
             assert new_key not in keys_found
-            keys2 = keys_found | frozenset([new_key])
-            heapq.heappush(heap, (dist2, nb_keys - 1, k, keys2))
+            dist2 = dist + d
+            keys_found2 = keys_found | frozenset([new_key])
+            heapq.heappush(heap, (dist2, -len(keys_found2), k_pos, keys_found2))
     assert 0
 
 
@@ -141,7 +140,7 @@ def run_tests():
 
 def get_solutions():
     maze = get_maze_from_file()
-    # print(get_all_keys(maze))
+    # Too slow: print(get_all_keys(maze))
 
 
 if __name__ == "__main__":
