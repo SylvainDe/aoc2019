@@ -3,6 +3,7 @@ import datetime
 import string
 import collections
 import itertools
+import heapq
 
 
 def get_grid_from_file(file_path="day20_input.txt"):
@@ -56,33 +57,62 @@ def get_labels(letters, passages):
     return entrance, exit, labels
 
 
+def print_graph(graph):
+    for pos, succs in graph.items():
+        print(pos)
+        for pos2, d in succs.items():
+            print("     ", d, pos2)
+
+
 def build_graph(passages, warps):
     # Build graph: first passage then add warp
     graph = {
-        pos: set(pos2 for pos2 in neighbours(pos) if pos2 in passages)
+        pos: {pos2: 1 for pos2 in neighbours(pos) if pos2 in passages}
         for pos in passages
     }
     for label, positions in warps.items():
         assert len(positions) >= 2
         for pos1, pos2 in itertools.permutations(positions, 2):
-            graph[pos1].add(pos2)
+            graph[pos1][pos2] = 1
+    return graph
+
+
+def simplify_graph(graph):
+    """Optional method to simplify graph by removing dummy points."""
+    print(len(graph), sum(len(succ) for succ in graph.values()))
+    change = True
+    while change:
+        change = False
+        for pos, succs in graph.items():
+            n = len(succs)
+            if n == 2:
+                (p1, d1), (p2, d2) = succs.items()
+                del graph[pos]
+                del graph[p1][pos]
+                del graph[p2][pos]
+                graph[p1][p2] = d1 + d2
+                graph[p2][p1] = d1 + d2
+                change = True
+                break
+    print(len(graph), sum(len(succ) for succ in graph.values()))
+    print_graph(graph)
     return graph
 
 
 def shortest_path(graph, entrance, exit):
     distances = dict()
-    queue = collections.deque([(0, entrance)])
-    while queue:
-        d, pos = queue.popleft()
+    heap = [(0, entrance)]
+    while heap:
+        d, pos = heapq.heappop(heap)
         if pos in distances:
             assert d >= distances[pos]
             continue
         distances[pos] = d
         if pos == exit:
             break
-        for pos2 in graph[pos]:
+        for pos2, d2 in graph[pos].items():
             if pos2 not in distances:
-                queue.append(((d + 1), pos2))
+                heapq.heappush(heap, ((d + d2), pos2))
     return distances[exit]
 
 
