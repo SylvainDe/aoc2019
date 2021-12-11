@@ -2,6 +2,7 @@
 import datetime
 import math
 import functools
+import collections
 
 
 def get_orders_from_file(file_path="day22_input.txt"):
@@ -85,15 +86,37 @@ def modinv(a, m):
 
 
 # Orders
-def apply_order(order, deck):
-    if order == "deal into new stack":
-        return deal_into_new_stack(deck)
-    orders = [("cut ", cut_n_cards), ("deal with increment ", deal_with_increment)]
-    for prefix, func in orders:
+Operation = collections.namedtuple("Operation", ["deck", "single", "reverse"])
+orders = [
+    (
+        "deal into new stack",
+        Operation(
+            deal_into_new_stack, single_deal_into_new_stack, reverse_deal_into_new_stack
+        ),
+    ),
+    ("cut ", Operation(cut_n_cards, single_cut_n_cards, reverse_cut_n_cards)),
+    (
+        "deal with increment ",
+        Operation(
+            deal_with_increment, single_deal_with_increment, reverse_deal_with_increment
+        ),
+    ),
+]
+
+
+def get_order_and_remaining(order):
+    for prefix, op in orders:
         if order.startswith(prefix):
-            param = int(order[len(prefix) :])
-            return func(deck, param)
+            return op, order[len(prefix) :]
     assert False
+
+
+def apply_order(order, deck):
+    op, rem = get_order_and_remaining(order)
+    if rem:
+        return op.deck(deck, int(rem))
+    else:
+        return op.deck(deck)
 
 
 def apply_orders(nb, orders):
@@ -105,17 +128,11 @@ def apply_orders(nb, orders):
 
 # Orders on single cards
 def apply_single_order(order, nb_cards, position):
-    if order == "deal into new stack":
-        return single_deal_into_new_stack(nb_cards, position)
-    orders = [
-        ("cut ", single_cut_n_cards),
-        ("deal with increment ", single_deal_with_increment),
-    ]
-    for prefix, func in orders:
-        if order.startswith(prefix):
-            param = int(order[len(prefix) :])
-            return func(nb_cards, param, position)
-    assert False
+    op, rem = get_order_and_remaining(order)
+    if rem:
+        return op.single(nb_cards, int(rem), position)
+    else:
+        return op.single(nb_cards, position)
 
 
 def apply_single_orders(orders, nb_cards, position):
@@ -126,17 +143,11 @@ def apply_single_orders(orders, nb_cards, position):
 
 # Reverse orders on single cards
 def apply_reverse_order(order, nb_cards, position):
-    if order == "deal into new stack":
-        return reverse_deal_into_new_stack(nb_cards, position)
-    orders = [
-        ("cut ", reverse_cut_n_cards),
-        ("deal with increment ", reverse_deal_with_increment),
-    ]
-    for prefix, func in orders:
-        if order.startswith(prefix):
-            param = int(order[len(prefix) :])
-            return func(nb_cards, param, position)
-    assert False
+    op, rem = get_order_and_remaining(order)
+    if rem:
+        return op.reverse(nb_cards, int(rem), position)
+    else:
+        return op.reverse(nb_cards, position)
 
 
 def apply_reverse_orders(orders, nb_cards, position):
