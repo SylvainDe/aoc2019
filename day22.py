@@ -10,6 +10,19 @@ def get_orders_from_file(file_path="day22_input.txt"):
         return [l.strip() for l in f]
 
 
+# Note: Many functions here are basic implementations
+# which are mostly used to provide results that are
+# easy to check. These results can then be used to
+# test trickier and trickier implementations:
+#  - implement operations on the whole deck
+#  - implement operations to track a single card
+#  - implement operations to track a card in reverse
+#  - optimise the single-card operations using some
+#     modular trickery.
+# For the final result, one can directly skip to the
+# function apply_modular_orders.
+
+
 # Basic operations on full deck
 def new_deck(nb):
     return list(range(nb))
@@ -35,7 +48,7 @@ def deal_with_increment(deck, n):
 
 # Basic operations on single card
 def single_deal_into_new_stack(nb_cards, position):
-    return nb_cards - position - 1
+    return (-position - 1) % nb_cards
 
 
 def single_cut_n_cards(nb_cards, n, position):
@@ -46,20 +59,35 @@ def single_deal_with_increment(nb_cards, n, position):
     return (n * position) % nb_cards
 
 
+# Basic operation on single cards described as modular operation
+def modular_deal_into_new_stack():
+    return (-1, -1)
+
+
+def modular_cut_into_n_card(n):
+    return (1, -n)
+
+
+def modular_deal_with_increment(n):
+    return (n, 0)
+
+
 # Reverse operation on single card
-reverse_deal_into_new_stack = single_deal_into_new_stack
+def reverse_deal_into_new_stack(nb_cards, position):
+    """Same as single_deal_into_new_stack."""
+    return (-position - 1) % nb_cards
 
 
 def reverse_cut_n_cards(nb_cards, n, position):
-    return single_cut_n_cards(nb_cards, -n, position)
+    """Same as single_cut_n_cards with reversed argument."""
+    return (position + n) % nb_cards
 
 
 def reverse_deal_with_increment(nb_cards, n, position):
     assert math.gcd(nb_cards, n) == 1
     # Card i ends up at position j such that: j = (n*i) % nb_cards
     # Finding i from j corresponds to finding the inverse of n modulo nb_cards
-    n_inv = modinv(n, nb_cards)
-    return position * n_inv % nb_cards
+    return (position * modinv(n, nb_cards)) % nb_cards
 
 
 def xgcd(a, b):
@@ -86,31 +114,36 @@ def modinv(a, m):
 
 
 # Orders
-Operation = collections.namedtuple("Operation", ["deck", "single", "reverse"])
-orders = [
-    (
-        "deal into new stack",
-        Operation(
-            deal_into_new_stack, single_deal_into_new_stack, reverse_deal_into_new_stack
-        ),
+Operation = collections.namedtuple(
+    "Operation", ["deck", "single", "reverse", "modular"]
+)
+orders = {
+    "deal into new stack": Operation(
+        deal_into_new_stack,
+        single_deal_into_new_stack,
+        reverse_deal_into_new_stack,
+        modular_deal_into_new_stack,
     ),
-    ("cut ", Operation(cut_n_cards, single_cut_n_cards, reverse_cut_n_cards)),
-    (
-        "deal with increment ",
-        Operation(
-            deal_with_increment, single_deal_with_increment, reverse_deal_with_increment
-        ),
+    "cut ": Operation(
+        cut_n_cards, single_cut_n_cards, reverse_cut_n_cards, modular_cut_into_n_card
     ),
-]
+    "deal with increment ": Operation(
+        deal_with_increment,
+        single_deal_with_increment,
+        reverse_deal_with_increment,
+        modular_deal_with_increment,
+    ),
+}
 
 
 def get_order_and_remaining(order):
-    for prefix, op in orders:
+    for prefix, op in orders.items():
         if order.startswith(prefix):
             return op, order[len(prefix) :]
     assert False
 
 
+# Orders on the whole deck
 def apply_order(order, deck):
     op, rem = get_order_and_remaining(order)
     if rem:
@@ -156,6 +189,47 @@ def apply_reverse_orders(orders, nb_cards, position):
     return position
 
 
+# Orders on single cards using modular logic
+# All orders can be seen as computing
+#   pos2 = (pos1 * A1 + b1) % nb_cards
+# And they can be combined as such
+#
+#   pos3 = (pos2 * A2 + b2) % nb_cards
+#        = ((pos1 * A1 + b1) * A2 + b2) % nb_cards
+#        = (pos1 * A1 * A2 + b1 * A2 + b2) % nb_cards
+#                  ~~~~~~~   ~~~~~~~~~~~~
+#                    ~A~          ~B~
+#
+# Hence, we can summarize an order but also a list of orders
+# as a tuple (a, b):
+#  - it can be applied very efficiently
+#  - it can be applied in reverse very efficiently too
+def get_modular_param(orders):
+    gen_a, gen_b = 1, 0
+    for order in orders:
+        op, rem = get_order_and_remaining(order)
+        a, b = op.modular(int(rem)) if rem else op.modular()
+        gen_a = gen_a * a
+        gen_b = gen_b * a + b
+    return gen_a, gen_b
+
+
+def apply_modular_orders(orders, nb_cards, position):
+    a, b = get_modular_param(orders)
+    return (a * position + b) % nb_cards
+
+
+def apply_modular_reversed_orders(orders, nb_cards, position):
+    # We have the property:
+    #   pos2 = (pos1 * a + b) % nb_cards
+    # And we want to compute pos1 from a, b, pos2 and nb_cards
+    #   (pos2 - b) = pos1 * a % nb_cards
+    # We must find the inverse of a modulo nb_cards
+    a, b = get_modular_param(orders)
+    return ((position - b) * modinv(a, nb_cards)) % nb_cards
+
+
+# Tests
 def test_minimal_operations():
     deck = new_deck(10)
     assert deck == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -172,23 +246,31 @@ def test_single_card_operations():
         for pos, card in enumerate(deck):
             assert single_deal_into_new_stack(nb_cards, card) == pos
             assert reverse_deal_into_new_stack(nb_cards, pos) == card
+            a, b = modular_deal_into_new_stack()
+            assert (a * card + b) % nb_cards == pos
         for cut_arg in [3, -4]:
             deck = cut_n_cards(new_deck(nb_cards), cut_arg)
+            a, b = modular_cut_into_n_card(cut_arg)
             for pos, card in enumerate(deck):
                 assert single_cut_n_cards(nb_cards, cut_arg, card) == pos
                 assert reverse_cut_n_cards(nb_cards, cut_arg, pos) == card
+                assert (a * card + b) % nb_cards == pos
         for incr_arg in [3]:
             deck = deal_with_increment(new_deck(nb_cards), incr_arg)
+            a, b = modular_deal_with_increment(incr_arg)
             for pos, card in enumerate(deck):
                 assert single_deal_with_increment(nb_cards, incr_arg, card) == pos
                 assert reverse_deal_with_increment(nb_cards, incr_arg, pos) == card
+                assert (a * card + b) % nb_cards == pos
 
 
 def test_single_card_orders(nb_cards, orders):
     result = apply_orders(nb_cards, orders)
     for pos, card in enumerate(result):
         assert apply_single_orders(orders, nb_cards, card) == pos
+        assert apply_modular_orders(orders, nb_cards, card) == pos
         assert apply_reverse_orders(orders, nb_cards, pos) == card
+        assert apply_modular_reversed_orders(orders, nb_cards, pos) == card
 
 
 def test_orders():
@@ -239,26 +321,21 @@ def run_tests():
 def part1(orders):
     nb_cards = 10007
     card_number = 2019
-    return apply_single_orders(orders, nb_cards, card_number)
+    return apply_modular_orders(orders, nb_cards, card_number)
 
 
 def part2(orders):
-    positions_seen = dict()
     nb_cards = 119315717514047
     final_position = 2020
-    # Perform operations in reverse order
-    # Hope to see same positions twice and infer a frequence
-    for i in range(101741582076661):
-        if final_position in positions_seen:
-            break
-        positions_seen[final_position] = i
-        final_position = apply_reverse_orders(orders, nb_cards, final_position)
+    nb_shuffle = 101741582076661
+    # Not quite the answer
+    # return apply_modular_reversed_orders(orders, nb_cards, final_position)
 
 
 def get_solutions():
     orders = get_orders_from_file()
     print(part1(orders))
-    # print(part2(orders)) - not efficient enough yet >_<
+    # print(part2(orders)) - not correct >_<
 
 
 if __name__ == "__main__":
