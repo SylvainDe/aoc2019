@@ -152,10 +152,11 @@ def apply_order(order, deck):
         return op.deck(deck)
 
 
-def apply_orders(nb, orders):
+def apply_orders(nb, orders, repetition=1):
     deck = new_deck(nb)
-    for order in orders:
-        deck = apply_order(order, deck)
+    for i in range(repetition):
+        for order in orders:
+            deck = apply_order(order, deck)
     return deck
 
 
@@ -204,28 +205,37 @@ def apply_reverse_orders(orders, nb_cards, position):
 # as a tuple (a, b):
 #  - it can be applied very efficiently
 #  - it can be applied in reverse very efficiently too
-def get_modular_param(orders):
-    gen_a, gen_b = 1, 0
+#  - it can be applied multiple times very efficiently
+def get_modular_param(orders, repetition, nb_cards):
+    a, b = 1, 0
     for order in orders:
         op, rem = get_order_and_remaining(order)
-        a, b = op.modular(int(rem)) if rem else op.modular()
-        gen_a = gen_a * a
-        gen_b = gen_b * a + b
-    return gen_a, gen_b
+        curr_a, curr_b = op.modular(int(rem)) if rem else op.modular()
+        a = a * curr_a % nb_cards
+        b = b * curr_a + curr_b % nb_cards
+    # All orders are summarised as (a, b)
+    if repetition == 1:
+        return a, b
+    # Repetitions can then be computed with exponentiation
+    #  a, a^2, a^3.. a^n
+    #  b, b*(a+1), b*(a^2 + a + 1), b*(a^n+...+a^3+a^2+a+1) = b*(a^(n+1) - 1)/(a - 1)
+    sum_a = (pow(a, repetition) - 1) // (a - 1)
+    a = pow(a, repetition)
+    return a, sum_a * b
 
 
-def apply_modular_orders(orders, nb_cards, position):
-    a, b = get_modular_param(orders)
+def apply_modular_orders(orders, nb_cards, position, repetition=1):
+    a, b = get_modular_param(orders, repetition, nb_cards)
     return (a * position + b) % nb_cards
 
 
-def apply_modular_reversed_orders(orders, nb_cards, position):
+def apply_modular_reversed_orders(orders, nb_cards, position, repetition=1):
     # We have the property:
     #   pos2 = (pos1 * a + b) % nb_cards
     # And we want to compute pos1 from a, b, pos2 and nb_cards
     #   (pos2 - b) = pos1 * a % nb_cards
     # We must find the inverse of a modulo nb_cards
-    a, b = get_modular_param(orders)
+    a, b = get_modular_param(orders, repetition, nb_cards)
     return ((position - b) * modinv(a, nb_cards)) % nb_cards
 
 
@@ -265,12 +275,31 @@ def test_single_card_operations():
 
 
 def test_single_card_orders(nb_cards, orders):
+    # Test that single card operation tracks every card properly
     result = apply_orders(nb_cards, orders)
     for pos, card in enumerate(result):
         assert apply_single_orders(orders, nb_cards, card) == pos
         assert apply_modular_orders(orders, nb_cards, card) == pos
         assert apply_reverse_orders(orders, nb_cards, pos) == card
         assert apply_modular_reversed_orders(orders, nb_cards, pos) == card
+    # Test that repetitions of orders can be tracked
+    result2 = apply_orders(nb_cards, orders, 2)
+    for pos2, card2 in enumerate(result2):
+        pos1 = result.index(card2)
+        # Test with temporary positions
+        assert apply_single_orders(orders, nb_cards, pos1) == pos2
+        assert apply_modular_orders(orders, nb_cards, pos1) == pos2
+        assert apply_reverse_orders(orders, nb_cards, pos2) == pos1
+        assert apply_modular_reversed_orders(orders, nb_cards, pos2) == pos1
+        # Test with a single operation
+        assert apply_modular_orders(orders, nb_cards, card2, 2) == pos2
+        assert apply_modular_reversed_orders(orders, nb_cards, pos2, 2) == card2
+    # More iterations to be sure
+    for rep in [1, 2, 5, 20]:
+        result = apply_orders(nb_cards, orders, rep)
+        for pos, card in enumerate(result):
+            assert apply_modular_orders(orders, nb_cards, card, rep) == pos
+            assert apply_modular_reversed_orders(orders, nb_cards, pos, rep) == card
 
 
 def test_orders():
@@ -328,14 +357,13 @@ def part2(orders):
     nb_cards = 119315717514047
     final_position = 2020
     nb_shuffle = 101741582076661
-    # Not quite the answer
-    # return apply_modular_reversed_orders(orders, nb_cards, final_position)
+    return apply_modular_reversed_orders(orders, nb_cards, final_position, nb_shuffle)
 
 
 def get_solutions():
     orders = get_orders_from_file()
     print(part1(orders))
-    # print(part2(orders)) - not correct >_<
+    # print(part2(orders)) - not fast enough >_<
 
 
 if __name__ == "__main__":
