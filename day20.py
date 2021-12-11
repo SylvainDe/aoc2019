@@ -42,9 +42,11 @@ def get_labels(letters, passages):
     for pos, val in letters.items():
         neigh = list(neighbours(pos))
         passage = [n for n in neigh if n in passages]
-        letter = [letters[n] for n in neigh if n in letters]
+        letter = [n for n in neigh if n in letters]
         if len(letter) == 1 and len(passage) == 1:
-            label = "".join(sorted(val + letter[0]))
+            # Sort letters by position top-to-bottom and left-to-right
+            letter_pos = sorted([pos, letter[0]])
+            label = "".join(letters[p] for p in letter_pos)
             pos2 = passage[0]
             labels.setdefault(label, []).append(pos2)
     # Interpret labels
@@ -73,9 +75,10 @@ def build_graph(passages):
 
 def add_warps(graph, warps):
     for label, positions in warps.items():
-        assert len(positions) >= 2
-        for pos1, pos2 in itertools.permutations(positions, 2):
-            graph[pos1][pos2] = 1
+        assert len(positions) == 2
+        pos1, pos2 = positions
+        graph[pos1][pos2] = 1
+        graph[pos2][pos1] = 1
 
 
 def simplify_graph(graph):
