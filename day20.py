@@ -36,6 +36,16 @@ def get_info(grid):
     return passages, letters
 
 
+def get_center(grid):
+    return (len(grid) // 2, len(grid[0]) // 2)
+
+
+def get_dist(p1, p2):
+    x1, y1 = p1
+    x2, y2 = p2
+    return (x1 - x2) ** 2 + (y1 - y2) ** 2
+
+
 def get_labels(letters, passages):
     # Find labels
     labels = dict()
@@ -66,6 +76,20 @@ def print_graph(graph):
             print("     ", d, pos2)
 
 
+def print_distances(points):
+    keys = points.keys()
+    i_vals = [i for i, _, _ in keys]
+    j_vals = [j for _, j, _ in keys]
+    k_vals = [k for _, _, k in keys]
+    i_range = list(range(min(i_vals), max(i_vals) + 1))
+    j_range = list(range(min(j_vals), max(j_vals) + 1))
+    k_range = list(range(min(k_vals), max(k_vals) + 1))
+    for k in k_range:
+        print("Level ", k)
+        for i in i_range:
+            print(" ".join(str(points.get((i, j, k), "")).center(2) for j in j_range))
+
+
 def build_graph(passages):
     return {
         pos: {pos2: 1 for pos2 in neighbours(pos) if pos2 in passages}
@@ -83,7 +107,7 @@ def add_warps(graph, warps):
 
 def simplify_graph(graph):
     """Optional method to simplify graph by removing dummy points."""
-    print(len(graph), sum(len(succ) for succ in graph.values()))
+    # print(len(graph), sum(len(succ) for succ in graph.values()))
     change = True
     while change:
         change = False
@@ -98,7 +122,7 @@ def simplify_graph(graph):
                 graph[p2][p1] = d1 + d2
                 change = True
                 break
-    print(len(graph), sum(len(succ) for succ in graph.values()))
+    # print(len(graph), sum(len(succ) for succ in graph.values()))
     # print_graph(graph)
     return graph
 
@@ -130,6 +154,37 @@ def solve_maze(grid):
     return shortest_path(graph, entrance, exit)
 
 
+def solve_maze2(grid):
+    # Extract relevant info from maze
+    passages, letters = get_info(grid)
+    center = get_center(grid)
+    # Extract positions for interesting places
+    entrance, exit, warps = get_labels(letters, passages)
+    graph = build_graph(passages)
+    graph = simplify_graph(graph)
+    # Bring to next dimensions
+    nb_levels = 60
+    graph2 = dict()
+    for z in range(nb_levels):
+        # Add passages on all levels
+        for (x, y), succs in graph.items():
+            graph2[(x, y, z)] = {(x2, y2, z): d for (x2, y2), d in succs.items()}
+    for z in range(nb_levels):
+        # Add multi-dimensions wraps
+        for label, positions in warps.items():
+            assert len(positions) == 2
+            inner, outter = sorted(positions, key=lambda p: get_dist(p, center))
+            (x_in, y_in), (x_out, y_out) = inner, outter
+            # Inner goes to outter higher
+            graph2[(x_in, y_in, z)][(x_out, y_out, z + 1)] = 1
+            # Outter goes to inner lower
+            graph2.setdefault((x_out, y_out, z + 1), dict())[(x_in, y_in, z)] = 1
+    # Solve
+    in1, in2 = entrance
+    out1, out2 = exit
+    return shortest_path(graph2, (in1, in2, 0), (out1, out2, 0))
+
+
 def run_tests():
     grid = [
         "         A           ",
@@ -153,6 +208,7 @@ def run_tests():
         "             Z       ",
     ]
     assert solve_maze(grid) == 23
+    assert solve_maze2(grid) == 26
     grid = [
         "                   A               ",
         "                   A               ",
@@ -193,11 +249,52 @@ def run_tests():
         "           U   P   P               ",
     ]
     assert solve_maze(grid) == 58
+    grid = [
+        "             Z L X W       C                 ",
+        "             Z P Q B       K                 ",
+        "  ###########.#.#.#.#######.###############  ",
+        "  #...#.......#.#.......#.#.......#.#.#...#  ",
+        "  ###.#.#.#.#.#.#.#.###.#.#.#######.#.#.###  ",
+        "  #.#...#.#.#...#.#.#...#...#...#.#.......#  ",
+        "  #.###.#######.###.###.#.###.###.#.#######  ",
+        "  #...#.......#.#...#...#.............#...#  ",
+        "  #.#########.#######.#.#######.#######.###  ",
+        "  #...#.#    F       R I       Z    #.#.#.#  ",
+        "  #.###.#    D       E C       H    #.#.#.#  ",
+        "  #.#...#                           #...#.#  ",
+        "  #.###.#                           #.###.#  ",
+        "  #.#....OA                       WB..#.#..ZH",
+        "  #.###.#                           #.#.#.#  ",
+        "CJ......#                           #.....#  ",
+        "  #######                           #######  ",
+        "  #.#....CK                         #......IC",
+        "  #.###.#                           #.###.#  ",
+        "  #.....#                           #...#.#  ",
+        "  ###.###                           #.#.#.#  ",
+        "XF....#.#                         RF..#.#.#  ",
+        "  #####.#                           #######  ",
+        "  #......CJ                       NM..#...#  ",
+        "  ###.#.#                           #.###.#  ",
+        "RE....#.#                           #......RF",
+        "  ###.###        X   X       L      #.#.#.#  ",
+        "  #.....#        F   Q       P      #.#.#.#  ",
+        "  ###.###########.###.#######.#########.###  ",
+        "  #.....#...#.....#.......#...#.....#.#...#  ",
+        "  #####.#.###.#######.#######.###.###.#.#.#  ",
+        "  #.......#.......#.#.#.#.#...#...#...#.#.#  ",
+        "  #####.###.#####.#.#.#.#.###.###.#.###.###  ",
+        "  #.......#.....#.#...#...............#...#  ",
+        "  #############.#.#.###.###################  ",
+        "               A O F   N                     ",
+        "               A A D   M                     ",
+    ]
+    assert solve_maze2(grid) == 396
 
 
 def get_solutions():
     grid = get_grid_from_file()
     print(solve_maze(grid))
+    print(solve_maze2(grid))
 
 
 if __name__ == "__main__":
