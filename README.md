@@ -24,3 +24,5 @@ https://adventofcode.com/2019/day/20 : 0/2
 https://adventofcode.com/2019/day/22 : 0/2
 
 https://adventofcode.com/2019/day/24 : 0/2
+
+https://adventofcode.com/2019/day/2 : 0/2
