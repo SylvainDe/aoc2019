@@ -13,6 +13,7 @@ def get_intcode_from_file(file_path="day2_input.txt"):
 
 
 def run(intcode):
+    intcode = list(intcode)
     pos = 0
     while True:
         op = intcode[pos]
@@ -29,11 +30,20 @@ def run(intcode):
         pos += 4
 
 
+def run_verb_noun(intcode, noun, verb):
+    intcode = list(intcode)
+    intcode[1] = noun
+    intcode[2] = verb
+    return run(intcode)[0]
+
+
 def run_tests():
     intcode = get_intcode_from_string("1,9,10,3,2,3,11,0,99,30,40,50")
     assert run(intcode) == [3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
+    assert run_verb_noun(intcode, 9, 10) == 3500
     intcode = get_intcode_from_string("1,0,0,0,99")
     assert run(intcode) == [2, 0, 0, 0, 99]
+    assert run_verb_noun(intcode, 0, 0) == 2
     intcode = get_intcode_from_string("2,3,0,3,99")
     assert run(intcode) == [2, 3, 0, 6, 99]
     intcode = get_intcode_from_string("2,4,4,5,99,0")
@@ -50,9 +60,17 @@ def part1(intcode):
     return intcode[0]
 
 
+def part2(intcode):
+    for verb in range(99 + 1):
+        for noun in range(99 + 1):
+            if run_verb_noun(intcode, noun, verb) == 19690720:
+                return 100 * noun + verb
+
+
 def get_solutions():
     intcode = get_intcode_from_file()
     print(part1(intcode))
+    print(part2(intcode))
 
 
 if __name__ == "__main__":
