@@ -34,13 +34,12 @@ def get_value(intcode, pos, mode, relative_base):
     else:
         assert False
 
-
-def get_write_index(intcode, pos, mode, relative_base):
+def set_value(intcode, pos, mode, relative_base, value):
     val = intcode[pos]
     if mode == 0:  # Position mode
-        return val
+        intcode[val] = value
     elif mode == 2:  # Relative mode
-        return val + relative_base
+        intcode[val + relative_base] = value
     else:
         assert False
 
@@ -63,18 +62,15 @@ def run(intcode, input_=None):
             return final_intcode, output
         elif op == 1:  # Addition
             a, b = get_values_from_pos(intcode, pos, [mode1, mode2], relative_base)
-            c = get_write_index(intcode, pos + 3, mode3, relative_base)
-            intcode[c] = a + b
+            set_value(intcode, pos + 3, mode3, relative_base, a + b)
             pos += 4
         elif op == 2:  # Multiplication
             a, b = get_values_from_pos(intcode, pos, [mode1, mode2], relative_base)
-            c = get_write_index(intcode, pos + 3, mode3, relative_base)
-            intcode[c] = a * b
+            set_value(intcode, pos + 3, mode3, relative_base, a * b)
             pos += 4
         elif op == 3:  # Save-input
             assert input_ is not None
-            a = get_write_index(intcode, pos + 1, mode1, relative_base)
-            intcode[a] = input_
+            set_value(intcode, pos + 1, mode1, relative_base, input_)
             pos += 2
         elif op == 4:  # Output
             a = get_value(intcode, pos + 1, mode1, relative_base)
@@ -88,13 +84,11 @@ def run(intcode, input_=None):
             pos = b if not a else pos + 3
         elif op == 7:  # Less-then
             a, b = get_values_from_pos(intcode, pos, [mode1, mode2], relative_base)
-            c = get_write_index(intcode, pos + 3, mode3, relative_base)
-            intcode[c] = 1 if a < b else 0
+            set_value(intcode, pos + 3, mode3, relative_base, 1 if a < b else 0)
             pos += 4
         elif op == 8:  # Equals
             a, b = get_values_from_pos(intcode, pos, [mode1, mode2], relative_base)
-            c = get_write_index(intcode, pos + 3, mode3, relative_base)
-            intcode[c] = 1 if a == b else 0
+            set_value(intcode, pos + 3, mode3, relative_base, 1 if a == b else 0)
             pos += 4
         elif op == 9:  # Relative base
             a = get_value(intcode, pos + 1, mode1, relative_base)
