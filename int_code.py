@@ -1,5 +1,6 @@
 # vi: set shiftwidth=4 tabstop=4 expandtab:
 import datetime
+import collections
 
 
 def get_intcode_from_string(s):
@@ -22,53 +23,83 @@ def parse_op_code(op):
     return de, c, b, a
 
 
-def get_value(intcode, pos, immediate):
+def get_value(intcode, pos, mode, relative_base):
     val = intcode[pos]
-    return val if immediate else intcode[val]
+    if mode == 0:  # Position mode
+        return intcode[val]
+    elif mode == 1:  # Immediate mode
+        return val
+    elif mode == 2:  # Relative mode
+        return intcode[val + relative_base]
+    else:
+        assert False
 
 
-def get_values_from_pos(intcode, pos, modes):
-    return [get_value(intcode, pos + i, mode) for i, mode in enumerate(modes, start=1)]
+def get_write_index(intcode, pos, mode, relative_base):
+    val = intcode[pos]
+    if mode == 0:  # Position mode
+        return val
+    elif mode == 2:  # Relative mode
+        return val + relative_base
+    else:
+        assert False
+
+
+def get_values_from_pos(intcode, pos, modes, relative_base):
+    return [
+        get_value(intcode, pos + i, mode, relative_base)
+        for i, mode in enumerate(modes, start=1)
+    ]
 
 
 def run(intcode, input_=None):
-    intcode = list(intcode)
+    intcode = collections.defaultdict(int, enumerate(intcode))
     output = []
-    pos = 0
+    pos, relative_base = 0, 0
     while True:
-        op, mode1, mode2, _ = parse_op_code(intcode[pos])
+        op, mode1, mode2, mode3 = parse_op_code(intcode[pos])
         if op == 99:
-            return intcode, output
+            final_intcode = [intcode[v] for v in range(max(intcode) + 1)]
+            return final_intcode, output
         elif op == 1:  # Addition
-            a, b, c = get_values_from_pos(intcode, pos, [mode1, mode2, True])
+            a, b = get_values_from_pos(intcode, pos, [mode1, mode2], relative_base)
+            c = get_write_index(intcode, pos + 3, mode3, relative_base)
             intcode[c] = a + b
             pos += 4
         elif op == 2:  # Multiplication
-            a, b, c = get_values_from_pos(intcode, pos, [mode1, mode2, True])
+            a, b = get_values_from_pos(intcode, pos, [mode1, mode2], relative_base)
+            c = get_write_index(intcode, pos + 3, mode3, relative_base)
             intcode[c] = a * b
             pos += 4
         elif op == 3:  # Save-input
             assert input_ is not None
-            intcode[intcode[pos + 1]] = input_
+            a = get_write_index(intcode, pos + 1, mode1, relative_base)
+            intcode[a] = input_
             pos += 2
         elif op == 4:  # Output
-            a = get_value(intcode, pos + 1, mode1)
+            a = get_value(intcode, pos + 1, mode1, relative_base)
             output.append(a)
             pos += 2
         elif op == 5:  # Jump-if-true
-            a, b = get_values_from_pos(intcode, pos, [mode1, mode2])
+            a, b = get_values_from_pos(intcode, pos, [mode1, mode2], relative_base)
             pos = b if a else pos + 3
         elif op == 6:  # Jump-if-false
-            a, b = get_values_from_pos(intcode, pos, [mode1, mode2])
+            a, b = get_values_from_pos(intcode, pos, [mode1, mode2], relative_base)
             pos = b if not a else pos + 3
         elif op == 7:  # Less-then
-            a, b, c = get_values_from_pos(intcode, pos, [mode1, mode2, True])
+            a, b = get_values_from_pos(intcode, pos, [mode1, mode2], relative_base)
+            c = get_write_index(intcode, pos + 3, mode3, relative_base)
             intcode[c] = 1 if a < b else 0
             pos += 4
         elif op == 8:  # Equals
-            a, b, c = get_values_from_pos(intcode, pos, [mode1, mode2, True])
+            a, b = get_values_from_pos(intcode, pos, [mode1, mode2], relative_base)
+            c = get_write_index(intcode, pos + 3, mode3, relative_base)
             intcode[c] = 1 if a == b else 0
             pos += 4
+        elif op == 9:  # Relative base
+            a = get_value(intcode, pos + 1, mode1, relative_base)
+            relative_base += a
+            pos += 2
         else:
             assert False
 
@@ -142,9 +173,40 @@ def run_tests_day5():
     assert run(intcode, 9)[1] == [1001]
 
 
+def run_tests_day9():
+    intcode = get_intcode_from_string(
+        "109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99"
+    )
+    assert run(intcode)[1] == intcode
+    intcode = get_intcode_from_string("1102,34915192,34915192,7,4,7,99,0")
+    assert run(intcode)[1] == [1219070632396864]
+    intcode = get_intcode_from_string("104,1125899906842624,99")
+    assert run(intcode)[1] == [1125899906842624]
+    # More tests from Reddit: https://www.reddit.com/r/adventofcode/comments/e8aw9j/comment/fac3294/?utm_source=share&utm_medium=web2x&context=3
+    intcode = get_intcode_from_string("109,-1,4,1,99")
+    assert run(intcode)[1] == [-1]
+    intcode = get_intcode_from_string("109,-1,104,1,99")
+    assert run(intcode)[1] == [1]
+    intcode = get_intcode_from_string("109,-1,204,1,99")
+    assert run(intcode)[1] == [109]
+    intcode = get_intcode_from_string("109,1,9,2,204,-6,99")
+    assert run(intcode)[1] == [204]
+    intcode = get_intcode_from_string("109,1,109,9,204,-6,99")
+    assert run(intcode)[1] == [204]
+    intcode = get_intcode_from_string("109,1,209,-1,204,-106,99")
+    assert run(intcode)[1] == [204]
+    intcode = get_intcode_from_string("109,1,3,3,204,2,99")
+    assert run(intcode, 42)[1] == [42]
+    assert run(intcode, 314)[1] == [314]
+    intcode = get_intcode_from_string("109,1,203,2,204,2,99")
+    assert run(intcode, 42)[1] == [42]
+    assert run(intcode, 314)[1] == [314]
+
+
 def run_tests():
     run_tests_day2()
     run_tests_day5()
+    run_tests_day9()
 
 
 if __name__ == "__main__":
