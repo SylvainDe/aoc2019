@@ -1,74 +1,29 @@
 # vi: set shiftwidth=4 tabstop=4 expandtab:
 import datetime
-
-
-def get_intcode_from_string(s):
-    return [int(v) for v in s.split(",")]
-
-
-def get_intcode_from_file(file_path="day2_input.txt"):
-    with open(file_path) as f:
-        for l in f:
-            return get_intcode_from_string(l)
-
-
-def run(intcode):
-    intcode = list(intcode)
-    pos = 0
-    while True:
-        op = intcode[pos]
-        if op == 99:
-            return intcode
-        elif op == 1:
-            intcode[intcode[pos + 3]] = (
-                intcode[intcode[pos + 1]] + intcode[intcode[pos + 2]]
-            )
-        elif op == 2:
-            intcode[intcode[pos + 3]] = (
-                intcode[intcode[pos + 1]] * intcode[intcode[pos + 2]]
-            )
-        pos += 4
-
-
-def run_verb_noun(intcode, noun, verb):
-    intcode = list(intcode)
-    intcode[1] = noun
-    intcode[2] = verb
-    return run(intcode)[0]
+import int_code
 
 
 def run_tests():
-    intcode = get_intcode_from_string("1,9,10,3,2,3,11,0,99,30,40,50")
-    assert run(intcode) == [3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
-    assert run_verb_noun(intcode, 9, 10) == 3500
-    intcode = get_intcode_from_string("1,0,0,0,99")
-    assert run(intcode) == [2, 0, 0, 0, 99]
-    assert run_verb_noun(intcode, 0, 0) == 2
-    intcode = get_intcode_from_string("2,3,0,3,99")
-    assert run(intcode) == [2, 3, 0, 6, 99]
-    intcode = get_intcode_from_string("2,4,4,5,99,0")
-    assert run(intcode) == [2, 4, 4, 5, 99, 9801]
-    intcode = get_intcode_from_string("1,1,1,4,99,5,6,0,99")
-    assert run(intcode) == [30, 1, 1, 4, 2, 5, 6, 0, 99]
+    int_code.run_tests_day2()
 
 
 def part1(intcode):
     intcode = list(intcode)
     intcode[1] = 12
     intcode[2] = 2
-    intcode = run(intcode)
+    intcode = int_code.run(intcode)
     return intcode[0]
 
 
 def part2(intcode):
     for verb in range(99 + 1):
         for noun in range(99 + 1):
-            if run_verb_noun(intcode, noun, verb) == 19690720:
+            if int_code.run_verb_noun(intcode, noun, verb) == 19690720:
                 return 100 * noun + verb
 
 
 def get_solutions():
-    intcode = get_intcode_from_file()
+    intcode = int_code.get_intcode_from_file("day2_input.txt")
     print(part1(intcode))
     print(part2(intcode))
 
