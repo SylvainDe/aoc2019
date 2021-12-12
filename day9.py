@@ -10,6 +10,7 @@ def run_tests():
 def get_solutions():
     intcode = int_code.get_intcode_from_file("day9_input.txt")
     print(int_code.run(intcode, input_=1)[1])
+    print(int_code.run(intcode, input_=2)[1])
 
 
 if __name__ == "__main__":
