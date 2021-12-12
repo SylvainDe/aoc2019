@@ -7,8 +7,13 @@ def run_tests():
     int_code.run_tests_day5()
 
 
+def part1(intcode):
+    return int_code.run_diagnostic(intcode)
+
+
 def get_solutions():
     intcode = int_code.get_intcode_from_file("day5_input.txt")
+    print(part1(intcode))
 
 
 if __name__ == "__main__":

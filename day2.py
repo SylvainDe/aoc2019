@@ -11,7 +11,7 @@ def part1(intcode):
     intcode = list(intcode)
     intcode[1] = 12
     intcode[2] = 2
-    intcode = int_code.run(intcode)
+    intcode, _ = int_code.run(intcode)
     return intcode[0]
 
 
